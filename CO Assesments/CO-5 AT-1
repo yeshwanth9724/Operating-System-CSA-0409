@@ -1,0 +1,90 @@
+1. Optimized Linux File System Layout
+
+For the 50 GB server the disk can be divided into partitions or LVM volumes for /boot / /var /home and application data. The /var partition can be limited to 10 GB, for storing system logs. Logrotate can regularly rotate, compress and remove logs so that log files do not consume excessive space. LVM also allows storage to be extended when required.
+
+Useful Linux commands are:
+df -h
+du -sh /var/log/*
+lsblk
+sudo vgs
+sudo lvs
+sudo logrotate -f /etc/logrotate.conf
+
+Thus partitioning plus LVM plus logrotate plus disk monitoring prevents disk exhaustion. Helps critical services continue operating without interruption.
+
+2. Kernel-Level Optimization for High CPU Workloads
+
+A Linux system, with CPU workloads can reduce frequent context switching by tuning the CPU scheduler and controlling process priorities. Scheduler parameters can be adjusted using sysctl while nice and renice can be used to control process priority. CPU affinity can also be set using taskset to assign processes to CPU cores.
+
+Useful Linux commands are:
+top
+ps -eo pid,ppid,ni,pri,pcpu,comm
+nice -n 10 command
+sudo renice -n 10 -p PID
+taskset -cp 0 PID
+sysctl -a | grep sched
+
+Kernel modules can also be used to add or modify kernel-level functionality without rebuilding the entire kernel. These techniques reduce context switching improve CPU utilization and help support real-time processing without requiring hardware upgrades.
+
+3. Processing 1 Million Log Entries per Day Using Shell Scripting
+
+The administrator needs to process 1 million log entries per day within 2 minutes. To achieve this the script should avoid line-by-line processing and use optimized Linux commands that process large amounts of data efficiently.
+
+Use commands such as awk, grep, sort, uniq and cut. Among these awk is especially useful because it can filter, extract and count data in a pass.
+Example:
+Bash
+#!/bin/bash
+awk '{count[$3]++} END {
+for (item in count)
+print item, count[item]
+}' logfile.txt > result.txt
+
+Optimization Techniques
+
+1.)Use awk of multiple separate commands whenever possible.
+
+2.)Avoid while read loops for every log entry because they are slower for 1 million records.
+
+3.)Use grep for filtering.
+
+4.)Use sort. Uniq for grouping and counting when required.
+
+5.)Redirect output, to files of repeatedly printing to the terminal.
+
+Thus using Linux commands and avoiding unnecessary loops and processes can allow the 1 million log entries to be processed within the 2-minute requirement depending on the servers hardware and log complexity.
+
+4. Process Management for a Faulty High-CPU Process
+
+When a faulty background process consumes ninety percent of the CPU the first task is to locate and watch that background process without restarting the machine. I use commands such, as top, ps and pidstat to locate the background process and see how much CPU it uses. After locating the background process I can lower its priority with renice or I can limit the CPU that the faulty background process can use with taskset. If the faulty background process does not respond I can terminate the background process with kill.
+
+Useful Linux commands are:
+top
+ps aux --sort=-%cpu
+pidstat 1
+sudo renice 10 -p PID
+taskset -cp 0 PID
+kill PID
+kill -9 PID
+
+Thus locating the background process watching the faulty background process lowering the priority of the faulty background process limiting the CPU usage of the faulty background process and terminating only the faulty background process keep critical services running without rebooting the machine.
+
+5. Resource Allocation for 5 Virtual Machines
+
+The physical server has 16 GB RAM. The host operating system needs 4 GB leaving 12 GB for the machines. Each VM needs least 2 GB. So all 5 VMs cannot get 2 GB each because that would take 10 GB. The host also needs its reserved memory.
+
+A good way to split the memory is to give 2 GB to each VM. That uses 10 GB. Then leave 2 GB as memory for the host and any extra needs.
+
+Resource allocation:
+RAM = 16 GB
+Host OS = 4 GB
+VM 1 = 2 GB
+VM 2 = 2 GB
+VM 3 = 2 GB
+VM 4 = 2 GB
+VM 5 = 2 GB
+VM allocation = 10 GB
+Remaining = 2 GB
+
+Techniques, like dynamic memory allocation, memory ballooning and resource prioritization can help manage the remaining memory well. This makes sure that all 5 VMs get the memory they need and the host system works without problems.
+
+
